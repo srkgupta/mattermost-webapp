@@ -7,6 +7,7 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
 // Group: @team_settings
 
 import * as TIMEOUTS from '../../fixtures/timeouts';
@@ -36,11 +37,6 @@ describe('Teams Suite', () => {
             testTeam = team;
             testUser = user;
         });
-        cy.apiUpdateConfig({
-            ServiceSettings: {
-                EnableLegacySidebar: 'true',
-            },
-        });
     });
 
     it('MM-T393 Cancel out of leaving team', () => {
@@ -67,7 +63,7 @@ describe('Teams Suite', () => {
         cy.get('#leaveTeamNo').click();
 
         // * Check that the "leave team modal" closed
-        cy.get('#leaveTeamModal').should('not.be.visible');
+        cy.get('#leaveTeamModal').should('not.exist');
 
         // * check the team name
         cy.get('#headerTeamName').should('contain', testTeam.display_name);
@@ -345,7 +341,6 @@ describe('Teams Suite', () => {
         // # Login as new user
         cy.apiLogin(testUser);
         cy.visit(`/${testTeam.name}/channels/town-square`);
-        cy.wait(TIMEOUTS.ONE_SEC);
 
         // # Open the hamburger menu
         cy.findByLabelText('main menu').should('be.visible').click();
@@ -380,6 +375,6 @@ describe('Teams Suite', () => {
         cy.findByText(label).should('be.visible');
 
         cy.get(targetElement).trigger('mouseout', {force: true});
-        cy.findByText(label).should('not.be.visible');
+        cy.findByText(label).should('not.exist');
     }
 });

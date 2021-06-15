@@ -1,19 +1,19 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
+
 // ***************************************************************
 // - [#] indicates a test step (e.g. # Go to a page)
 // - [*] indicates an assertion (e.g. * Check the title)
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
 // Group: @enterprise @system_console @group_mentions
 
 import ldapUsers from '../../../fixtures/ldap_users.json';
 import * as TIMEOUTS from '../../../fixtures/timeouts';
 
-// assumes the CYPRESS_* variables are set
-// assumes that E20 license is uploaded
-// for setup with AWS: Follow the instructions mentioned in the mattermost/platform-private/config/ldap-test-setup.txt file
+import {enableGroupMention} from './helpers';
 
 describe('Group Mentions', () => {
     let groupID1;
@@ -147,10 +147,10 @@ describe('Group Mentions', () => {
             cy.get('#post_textbox').should('be.visible').clear().type(`@${groupName}`).wait(TIMEOUTS.TWO_SEC);
 
             // * Verify if autocomplete dropdown is not displayed
-            cy.get('#suggestionList').should('not.be.visible');
+            cy.get('#suggestionList').should('not.exist');
 
             // # Submit a post containing the group mention
-            cy.postMessage(`@${groupName}`);
+            cy.postMessage(`@${groupName} `);
 
             // * Verify if a system message is not displayed
             cy.getLastPostId().then((postId) => {
@@ -175,7 +175,7 @@ describe('Group Mentions', () => {
         cy.get('#post_textbox', {timeout: TIMEOUTS.ONE_MIN}).should('be.visible');
 
         // # Trigger DM with a user
-        cy.get('#addDirectChannel').click();
+        cy.uiAddDirectMessage().click();
         cy.get('.more-modal__row.clickable').first().click();
         cy.get('#saveItems').click();
 
@@ -189,7 +189,7 @@ describe('Group Mentions', () => {
         });
 
         // # Submit a post containing the group mention
-        cy.postMessage(`@${groupName}`);
+        cy.postMessage(`@${groupName} `);
 
         // * Verify if a system message is not displayed
         cy.getLastPostId().then((postId) => {
@@ -216,9 +216,8 @@ describe('Group Mentions', () => {
         cy.get('#post_textbox', {timeout: TIMEOUTS.ONE_MIN}).should('be.visible');
 
         // # Trigger DM with couple of users
-        cy.get('#addDirectChannel').click();
+        cy.uiAddDirectMessage().click();
         cy.get('.more-modal__row.clickable').first().click();
-        cy.get('.more-modal__row.clickable').eq(1).click();
         cy.get('#saveItems').click();
 
         // # Type the Group Name to check if Autocomplete dropdown is displayed
@@ -231,7 +230,7 @@ describe('Group Mentions', () => {
         });
 
         // # Submit a post containing the group mention
-        cy.postMessage(`@${groupName}`);
+        cy.postMessage(`@${groupName} `);
 
         // * Verify if a system message is not displayed
         cy.getLastPostId().then((postId) => {
@@ -259,16 +258,21 @@ describe('Group Mentions', () => {
             // # Link the group and the channel.
             cy.apiLinkGroupChannel(groupID1, channel.id);
 
-            cy.apiLogin({username: 'board.one', password: 'Password1'}).then(({user}) => {
-                cy.apiAddUserToChannel(channel.id, user.id);
+            cy.apiLogin({username: 'board.one', password: 'Password1'}).then(({user: boardOne}) => {
+                cy.apiAddUserToChannel(channel.id, boardOne.id);
 
                 // # Make the channel private and group-synced.
                 cy.apiPatchChannel(channel.id, {group_constrained: true, type: 'P'});
 
                 // # Login to create the dev user
-                cy.apiLogin({username: 'dev.one', password: 'Password1'}).then(({user: user2}) => {
+                cy.apiLogin({username: 'dev.one', password: 'Password1'}).then(({user: devOne}) => {
                     cy.apiAdminLogin();
-                    cy.apiAddUserToTeam(testTeam.id, user2.id);
+                    cy.apiGetClientLicense().then(({isCloudLicensed}) => {
+                        if (isCloudLicensed) {
+                            cy.apiSaveCloudOnboardingPreference(boardOne.id, 'hide', 'true');
+                        }
+                    });
+                    cy.apiAddUserToTeam(testTeam.id, devOne.id);
 
                     cy.apiLogin({username: 'board.one', password: 'Password1'});
 
@@ -276,7 +280,7 @@ describe('Group Mentions', () => {
                     cy.visit(`/${testTeam.name}/channels/${channel.name}`);
                     cy.get('#post_textbox', {timeout: TIMEOUTS.ONE_MIN}).should('be.visible');
 
-                    cy.postMessage(`@${groupName2}`);
+                    cy.postMessage(`@${groupName2} `);
 
                     // * Verify if a system message is not displayed
                     cy.getLastPostId().then((postId) => {
@@ -286,41 +290,4 @@ describe('Group Mentions', () => {
             });
         });
     });
-
-    function enableGroupMention(groupName, groupID) {
-        // # Visit Group Configurations page
-        cy.visit(`/admin_console/user_management/groups/${groupID}`);
-
-        // # Scroll users list into view and then make sure it has loaded before scrolling back to the top
-        cy.get('#group_users', {timeout: TIMEOUTS.ONE_MIN}).scrollIntoView();
-
-        cy.get('#group_profile').scrollIntoView().wait(TIMEOUTS.TWO_SEC);
-
-        // # Click the allow reference button
-        cy.findByTestId('allowReferenceSwitch').then((el) => {
-            const button = el.find('button');
-            const classAttribute = button[0].getAttribute('class');
-            if (!classAttribute.includes('active')) {
-                button[0].click();
-            }
-        });
-
-        // # Give the group a custom name different from its DisplayName attribute
-        cy.get('#groupMention').find('input').clear().type(groupName);
-
-        // # Click save button
-        saveConfig();
-    }
-
-    function saveConfig() {
-        cy.get('#saveSetting').then((btn) => {
-            if (btn.is(':enabled')) {
-                btn.click();
-
-                cy.waitUntil(() => cy.get('#saveSetting').then((el) => {
-                    return el[0].innerText === 'Save';
-                }));
-            }
-        });
-    }
 });

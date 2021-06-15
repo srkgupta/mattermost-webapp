@@ -8,13 +8,16 @@ import {ActionTypes, RHSStates} from 'utils/constants';
 
 describe('Reducers.RHS', () => {
     const initialState = {
+        filesSearchExtFilter: [],
         selectedPostId: '',
         selectedPostFocussedAt: 0,
         selectedPostCardId: '',
         selectedChannelId: '',
+        highlightedPostId: '',
         previousRhsState: null,
         rhsState: null,
         searchTerms: '',
+        searchType: '',
         searchResultsTerms: '',
         pluggableId: '',
         isSearchingFlaggedPost: false,
@@ -47,6 +50,24 @@ describe('Reducers.RHS', () => {
             ...initialState,
             selectedChannelId: '123',
             rhsState: RHSStates.PIN,
+            isSidebarOpen: true,
+        });
+    });
+
+    test('should match RHS state to channel files', () => {
+        const nextState = rhsReducer(
+            {},
+            {
+                type: ActionTypes.UPDATE_RHS_STATE,
+                state: RHSStates.CHANNEL_FILES,
+                channelId: '123',
+            },
+        );
+
+        expect(nextState).toEqual({
+            ...initialState,
+            selectedChannelId: '123',
+            rhsState: RHSStates.CHANNEL_FILES,
             isSidebarOpen: true,
         });
     });
@@ -102,6 +123,25 @@ describe('Reducers.RHS', () => {
         expect(nextState).toEqual({
             ...initialState,
             selectedPostCardId: '',
+            rhsState: RHSStates.SEARCH,
+            isSidebarOpen: true,
+        });
+    });
+
+    test(`should wipe highlightedPostId on ${ActionTypes.UPDATE_RHS_STATE}`, () => {
+        const nextState = rhsReducer(
+            {
+                highlightedPostId: '123',
+            },
+            {
+                type: ActionTypes.UPDATE_RHS_STATE,
+                state: RHSStates.SEARCH,
+            },
+        );
+
+        expect(nextState).toEqual({
+            ...initialState,
+            selectedPostId: '',
             rhsState: RHSStates.SEARCH,
             isSidebarOpen: true,
         });
@@ -455,5 +495,61 @@ describe('Reducers.RHS', () => {
                 });
             });
         });
+    });
+
+    test('should set the extension filters for a search', () => {
+        const nextState = rhsReducer(
+            {},
+            {
+                type: ActionTypes.SET_FILES_FILTER_BY_EXT,
+                data: ['pdf', 'png'],
+            },
+        );
+
+        expect(nextState).toEqual({
+            ...initialState,
+            filesSearchExtFilter: ['pdf', 'png'],
+        });
+    });
+
+    test('should set the type for a search', () => {
+        const nextState = rhsReducer(
+            {},
+            {
+                type: ActionTypes.UPDATE_RHS_SEARCH_TYPE,
+                searchType: 'files',
+            },
+        );
+
+        expect(nextState).toEqual({
+            ...initialState,
+            searchType: 'files',
+        });
+    });
+
+    test('should mark a reply as highlighted', () => {
+        const nextState = rhsReducer(
+            {},
+            {
+                type: ActionTypes.HIGHLIGHT_REPLY,
+                postId: '42',
+            },
+        );
+
+        expect(nextState).toEqual({
+            ...initialState,
+            highlightedPostId: '42',
+        });
+    });
+
+    test('should clear highlighted reply', () => {
+        const nextState = rhsReducer(
+            {highlightedPostId: '42'},
+            {
+                type: ActionTypes.CLEAR_HIGHLIGHT_REPLY,
+            },
+        );
+
+        expect(nextState).toEqual(initialState);
     });
 });

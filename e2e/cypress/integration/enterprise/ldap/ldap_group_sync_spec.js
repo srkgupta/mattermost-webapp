@@ -7,6 +7,7 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
 // Group: @enterprise @ldap
 
 import * as TIMEOUTS from '../../../fixtures/timeouts';
@@ -126,7 +127,10 @@ context('ldap', () => {
             cy.wait(TIMEOUTS.TWO_SEC); //eslint-disable-line cypress/no-unnecessary-waiting
 
             // # Turn on sync group members
-            cy.findByTestId('syncGroupSwitch').scrollIntoView().click();
+            cy.findByTestId('syncGroupSwitch').
+                scrollIntoView().
+                findByRole('button').
+                click({force: true});
 
             // # Add board group to team
             cy.findByTestId('addGroupsToTeamToggle').scrollIntoView().click();
@@ -226,7 +230,7 @@ context('ldap', () => {
 
             // # Go to team page to look for this channel in public channel directory
             cy.visit(`/${testTeam.name}`);
-            cy.get('#sidebarPublicChannelsMore').click();
+            cy.uiBrowseOrCreateChannel('Browse Channels').click();
 
             // * Search private channel name and make sure it isn't there in public channel directory
             cy.get('#searchChannelsTextbox').type(`${testChannel.display_name}`);
@@ -314,7 +318,7 @@ context('ldap', () => {
                 cy.visit(`/${testTeam.name}/channels/${testChannel.name}`);
 
                 // # Post /leave command in testChannel to leave it
-                cy.postMessage('/leave');
+                cy.postMessage('/leave ');
                 cy.get('#channelHeaderTitle', {timeout: TIMEOUTS.ONE_MIN}).should('be.visible').and('contain', 'Town Square');
 
                 // Visit the permalink link
@@ -324,7 +328,7 @@ context('ldap', () => {
                 cy.get('#channelHeaderTitle', {timeout: TIMEOUTS.ONE_MIN}).should('be.visible').and('contain', testChannel.display_name);
 
                 // # Leave the channel again
-                cy.postMessage('/leave');
+                cy.postMessage('/leave ');
                 cy.get('#channelHeaderTitle', {timeout: TIMEOUTS.ONE_MIN}).should('be.visible').and('contain', 'Town Square');
 
                 // # Login as sysadmin and convert testChannel to private channel
@@ -353,8 +357,8 @@ context('ldap', () => {
             cy.findByTestId('membersModal').click();
             cy.get('#showInviteModal').should('exist').click();
 
-            // * Asset that label is visiable and it says we can add new members
-            cy.get('#channelInviteModalLabel').should('be.visible').and('contain', `Add New Members to ${testChannel.display_name}`);
+            // * Assess that label is visible and it says we can add new members
+            cy.get('#addUsersToChannelModal').should('be.visible').findByText(`Add people to ${testChannel.display_name}`);
 
             // # Login as sysadmin and navigate to system scheme page and check off all users can manage private manage channels
             cy.apiAdminLogin();
@@ -395,7 +399,7 @@ context('ldap', () => {
                 cy.visit(`/${testTeam.name}/channels/${testChannel.name}`);
 
                 // # Click the sidebar switcher button
-                cy.get('#sidebarSwitcherButton').click();
+                cy.uiGetChannelSwitcher().click();
 
                 // * Channel switcher hint should be visible
                 cy.get('#quickSwitchHint', {timeout: TIMEOUTS.TWO_SEC}).should('be.visible').should('contain', 'Type to find a channel. Use UP/DOWN to browse, ENTER to select, ESC to dismiss.');
@@ -420,7 +424,7 @@ context('ldap', () => {
                 cy.visit(`/${testTeam.name}/channels/${testChannel.name}`);
 
                 // # Click the sidebar switcher button
-                cy.get('#sidebarSwitcherButton').click();
+                cy.uiGetChannelSwitcher().click();
 
                 // * Channel switcher hint should be visible
                 cy.get('#quickSwitchHint', {timeout: TIMEOUTS.TWO_SEC}).should('be.visible').should('contain', 'Type to find a channel. Use UP/DOWN to browse, ENTER to select, ESC to dismiss.');
@@ -446,9 +450,11 @@ context('ldap', () => {
             ).then(({channel: publicChannel}) => {
                 cy.apiLogin(testUser);
 
-                // # Click more under public channels
+                // # Visit off-topic channel
                 cy.visit(`/${testTeam.name}/channels/off-topic`);
-                cy.get('#sidebarPublicChannelsMore').click();
+
+                // # Go to LHS and click 'Browse Channels'
+                cy.uiBrowseOrCreateChannel('Browse Channels').click();
 
                 // * Search public channel and ensure it appears in the list
                 cy.get('#searchChannelsTextbox').type(`${publicChannel.display_name}`);
@@ -461,9 +467,11 @@ context('ldap', () => {
                 // # Login as a normal user
                 cy.apiLogin(testUser);
 
-                // # Click more under public channels
+                // # Visit off-topic channel
                 cy.visit(`/${testTeam.name}/channels/off-topic`);
-                cy.get('#sidebarPublicChannelsMore').click();
+
+                // # Go to LHS and click 'Browse Channels'
+                cy.uiBrowseOrCreateChannel('Browse Channels').click();
 
                 // * Search private channel name and make sure it isn't there in public channel directory
                 cy.get('#searchChannelsTextbox').type(`${publicChannel.display_name}`);

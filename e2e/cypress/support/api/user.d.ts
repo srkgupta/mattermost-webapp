@@ -16,7 +16,7 @@
 // ***************************************************************
 
 declare namespace Cypress {
-    interface Chainable<Subject = any> {
+    interface Chainable {
 
         /**
          * Login to server via API.
@@ -60,14 +60,14 @@ declare namespace Cypress {
          * @returns {UserProfile} out.user: `UserProfile` object
          *
          * @example
-         *   cy.apiAdminLoginWithMFA({token: '123456'});
+         *   cy.apiAdminLoginWithMFA(token);
          */
         apiAdminLoginWithMFA(): Chainable<UserProfile>;
 
         /**
          * Logout a user's active session from server via API.
          * See https://api.mattermost.com/#tag/users/paths/~1users~1logout/post
-         * Clears all cookies espececially `MMAUTHTOKEN`, `MMUSERID` and `MMCSRF`.
+         * Clears all cookies especially `MMAUTHTOKEN`, `MMUSERID` and `MMCSRF`.
          *
          * @example
          *   cy.apiLogout();
@@ -227,8 +227,21 @@ declare namespace Cypress {
         apiRevokeUserSessions(userId: string): Chainable<Record<string, any>>;
 
         /**
+         * Get list of users based on query parameters
+         * See https://api.mattermost.com/#tag/users/paths/~1users/get
+         * @param {String} queryParams - see link on available query parameters
+         * @returns {UserProfile[]} `out.users` as `UserProfile[]` object
+         *
+         * @example
+         *   cy.apiGetUsers().then(({users}) => {
+         *       // do something with users
+         *   });
+         */
+        apiGetUsers(queryParams: Record<string, any>): Chainable<UserProfile[]>;
+
+        /**
          * Get list of users that are not team members.
-         * See https://api.mattermost.com/#tag/users/paths/~1users/post
+         * See https://api.mattermost.com/#tag/users/paths/~1users/get
          * @param {String} queryParams.teamId - Team ID
          * @param {String} queryParams.page - Page to select, 0 (default)
          * @param {String} queryParams.perPage - The number of users per page, 60 (default)

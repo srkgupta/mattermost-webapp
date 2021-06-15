@@ -7,6 +7,7 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
 // Group: @enterprise @system_console @channel_moderation
 
 import {checkboxesTitleToIdMap} from './constants';
@@ -164,15 +165,15 @@ describe('MM-23102 - Channel Moderation - Channel Mentions', () => {
         visitChannel(regularUser, testChannel, testTeam);
 
         // * Type at all and enter that no confirmation dialogue shows up
-        cy.postMessage('@all');
+        cy.postMessage('@all ');
         cy.get('#confirmModalLabel').should('not.exist');
 
         // * Type at channel and enter that no confirmation dialogue shows up
-        cy.postMessage('@channel');
+        cy.postMessage('@channel ');
         cy.get('#confirmModalLabel').should('not.exist');
 
         // * Type at here and enter that no confirmation dialogue shows up
-        cy.postMessage('@here');
+        cy.postMessage('@here ');
         cy.get('#confirmModalLabel').should('not.exist');
     });
 });

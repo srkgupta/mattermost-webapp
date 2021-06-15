@@ -7,6 +7,7 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
 // Group: @integrations
 
 /**
@@ -21,7 +22,7 @@ import {
     saveConfigForScheme,
 } from '../../enterprise/system_console/channel_moderation/helpers';
 
-import {addNewCommand} from './slash_commands_spec';
+import {addNewCommand} from './helpers';
 
 describe('Slash commands', () => {
     const trigger = 'my_trigger';
@@ -89,10 +90,9 @@ describe('Slash commands', () => {
 
         // # Go back to home channel
         cy.visit(`/${team1.name}/channels/town-square`);
-        cy.wait(TIMEOUTS.TWO_SEC);
 
         // # Run slash command
-        cy.get('#post_textbox', {timeout: TIMEOUTS.ONE_MIN}).should('be.visible').clear().type(`/${trigger}{enter}`);
+        cy.get('#post_textbox', {timeout: TIMEOUTS.ONE_MIN}).should('be.visible').clear().type(`/${trigger} {enter}`);
         cy.wait(TIMEOUTS.TWO_SEC);
 
         // * Verify error
@@ -117,16 +117,15 @@ describe('Slash commands', () => {
 
         // # Update username
         // # click on last added command's(first child) edit action
-        cy.get(':nth-child(1) > .item-details > .d-flex > .item-actions > a > span').click();
+        cy.get('.backstage-list').find('.backstage-list__item').first().findByText('Edit').click();
         cy.get('#username').type('newname');
         cy.get('#saveCommand').click();
 
         // # Go back to home channel
         cy.visit(`/${team1.name}/channels/town-square`);
-        cy.wait(TIMEOUTS.TWO_SEC);
 
         // # Run slash command
-        cy.postMessage(`/${trigger}`);
+        cy.postMessage(`/${trigger} `);
         cy.wait(TIMEOUTS.TWO_SEC);
 
         // * Verify that last post is by newname
@@ -156,17 +155,16 @@ describe('Slash commands', () => {
 
         // # Update icon URL
         // # click on last added command's(first child) edit action
-        cy.get(':nth-child(1) > .item-details > .d-flex > .item-actions > a > span').click();
+        cy.get('.backstage-list').find('.backstage-list__item').first().findByText('Edit').click();
         const iconURL = 'http://www.mattermost.org/wp-content/uploads/2016/04/icon_WS.png';
         cy.get('#iconUrl').type(iconURL);
         cy.get('#saveCommand').click();
 
         // # Go back to home channel
         cy.visit(`/${team1.name}/channels/town-square`);
-        cy.wait(TIMEOUTS.TWO_SEC);
 
         // # Run slash command
-        cy.postMessage(`/${trigger}`);
+        cy.postMessage(`/${trigger} `);
         cy.wait(TIMEOUTS.TWO_SEC);
 
         // * Verify that last post has correct icon
@@ -180,7 +178,7 @@ describe('Slash commands', () => {
         deleteCommand(team1, trigger);
     });
 
-    it('MM-T703/MM-704 Show custom slash command in autocomplete', () => {
+    it('MM-T703 Show custom slash command in autocomplete', () => {
         // # Open slash command page
         cy.visit(`/${team1.name}/integrations/commands/installed`);
 
@@ -192,7 +190,7 @@ describe('Slash commands', () => {
 
         // # Update autocomplete
         // # click on last added command's(first child) edit action
-        cy.get(':nth-child(1) > .item-details > .d-flex > .item-actions > a > span').click();
+        cy.get('.backstage-list').find('.backstage-list__item').first().findByText('Edit').click();
         cy.get('#autocomplete').click();
         const hint = '[test-hint]';
         cy.get('#autocompleteHint').type(hint);
@@ -204,7 +202,6 @@ describe('Slash commands', () => {
 
         // # Go back to home channel
         cy.visit(`/${team1.name}/channels/town-square`);
-        cy.wait(TIMEOUTS.TWO_SEC);
 
         // # Type slash
         cy.get('#post_textbox', {timeout: TIMEOUTS.ONE_MIN}).should('be.visible').clear().type('/');
@@ -226,13 +223,12 @@ describe('Slash commands', () => {
 
         // # Remove autocomplete
         // # click on last added command's(first child) edit action
-        cy.get(':nth-child(1) > .item-details > .d-flex > .item-actions > a > span').click();
+        cy.get('.backstage-list').find('.backstage-list__item').first().findByText('Edit').click();
         cy.get('#autocomplete').click();
         cy.get('#saveCommand').click();
 
         // # Go back to home channel
         cy.visit(`/${team1.name}/channels/town-square`);
-        cy.wait(TIMEOUTS.TWO_SEC);
 
         // # Run slash command
         cy.get('#post_textbox', {timeout: TIMEOUTS.ONE_MIN}).should('be.visible').clear().type('/');
@@ -251,13 +247,13 @@ function deleteCommand(team, trigger) {
     cy.visit(`/${team.name}/integrations/commands/installed`);
 
     // # Delete slash command
-    // * Verify that last added command's(first child) details contains `/trigger`
-    cy.get(':nth-child(1) > .item-details > .d-flex > :nth-child(1) > .item-details__trigger').contains(`/${trigger}`);
+    // * Verify that last added command's details contains `/trigger`
+    cy.get('.backstage-list').find('.backstage-list__item').first().findByText(`- /${trigger}`).should('be.visible');
 
-    // # click on last added command's(first child) delete action(third item in actions)
-    cy.get(':nth-child(1) > .item-details > .d-flex > .item-actions > :nth-child(3) > .color--link > span').click();
+    // # Click on last added command's delete action
+    cy.get('.backstage-list').find('.backstage-list__item').first().findByText('Delete').click();
     cy.get('#confirmModalButton').click();
 
     // * Verify slash command no longer displays in list
-    cy.get(':nth-child(1) > .item-details > .d-flex > :nth-child(1) > .item-details__trigger').should('not.contain', `/${trigger}`);
+    cy.get('.backstage-list').find('.backstage-list__item').first().findByText(`- /${trigger}`).should('not.exist');
 }

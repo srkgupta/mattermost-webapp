@@ -1,8 +1,12 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
+import authenticator from 'authenticator';
+
 import {getRandomId} from '../../utils';
 import {getAdminAccount} from '../env';
+
+import {buildQueryString} from './helpers';
 
 // *****************************************************************************
 // Users
@@ -54,9 +58,18 @@ Cypress.Commands.add('apiLoginWithMFA', (user, token) => {
 Cypress.Commands.add('apiAdminLogin', (requestOptions = {}) => {
     const admin = getAdminAccount();
 
-    // This basically first tries to use the username and if it fails, then it tries to use the email.
+    // First, login with username
     cy.apiLogin(admin, requestOptions).then((resp) => {
         if (resp.error) {
+            if (resp.error.id === 'mfa.validate_token.authenticate.app_error') {
+                // On fail, try to login via MFA
+                return cy.dbGetUser({username: admin.username}).then(({user: {mfasecret}}) => {
+                    const token = authenticator.generateToken(mfasecret);
+                    return cy.apiLoginWithMFA(admin, token);
+                });
+            }
+
+            // Or, try to login via email
             delete admin.username;
             return cy.apiLogin(admin, requestOptions);
         }
@@ -111,10 +124,13 @@ Cypress.Commands.add('apiGetUserByEmail', (email, failOnStatusCode = true) => {
         url: '/api/v4/users/email/' + email,
         failOnStatusCode,
     }).then((response) => {
+        const {body, status} = response;
+
         if (failOnStatusCode) {
-            expect(response.status).to.equal(200);
+            expect(status).to.equal(200);
+            return cy.wrap({user: body});
         }
-        return cy.wrap({user: response.body});
+        return cy.wrap({user: status === 200 ? body : null});
     });
 });
 
@@ -186,7 +202,7 @@ Cypress.Commands.add('apiCreateAdmin', () => {
     return cy.request(options).then((res) => {
         expect(res.status).to.equal(201);
 
-        return cy.wrap({sysadmin: res.body});
+        return cy.wrap({sysadmin: {...res.body, password}});
     });
 });
 
@@ -263,15 +279,21 @@ Cypress.Commands.add('apiRevokeUserSessions', (userId) => {
     });
 });
 
-Cypress.Commands.add('apiGetUsersNotInTeam', ({teamId, page = 0, perPage = 60} = {}) => {
+Cypress.Commands.add('apiGetUsers', (queryParams = {}) => {
+    const queryString = buildQueryString(queryParams);
+
     return cy.request({
         method: 'GET',
-        url: `/api/v4/users?not_in_team=${teamId}&page=${page}&per_page=${perPage}`,
+        url: `/api/v4/users?${queryString}`,
         headers: {'X-Requested-With': 'XMLHttpRequest'},
     }).then((response) => {
         expect(response.status).to.equal(200);
         return cy.wrap({users: response.body});
     });
+});
+
+Cypress.Commands.add('apiGetUsersNotInTeam', ({teamId, page = 0, perPage = 60} = {}) => {
+    return cy.apiGetUsers({not_in_team: teamId, page, per_page: perPage});
 });
 
 Cypress.Commands.add('apiPatchUserRoles', (userId, roleNames = ['system_user']) => {

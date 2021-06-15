@@ -7,6 +7,7 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
 // Group: @files_and_attachments
 
 describe('Paste Image', () => {
@@ -61,7 +62,7 @@ describe('Paste Image', () => {
         });
 
         // # Post message
-        cy.postMessage('');
+        cy.postMessage('hello');
 
         cy.getLastPost().within(() => {
             cy.get('.file-view--single').within(() => {

@@ -7,6 +7,7 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
 // Group: @bot_accounts
 
 import {createBotPatch} from '../../support/api/bots';
@@ -70,7 +71,7 @@ describe('Managing bots in Teams and Channels', () => {
 
             // # Invite bot to team
             const bot = await client.createBot(createBotPatch());
-            cy.postMessage(`/invite @${bot.username}`);
+            cy.postMessage(`/invite @${bot.username} `);
 
             // * Verify system message in-channel
             cy.uiWaitUntilMessagePostedIncludes(`@${bot.username} is not a member of the team.`);

@@ -164,6 +164,8 @@ export default class Sidebar extends React.PureComponent<Props, State> {
             return (<div/>);
         }
 
+        const ariaLabel = Utils.localizeMessage('accessibility.sections.lhsNavigator', 'channel navigator region');
+
         return (
             <div
                 id='SidebarContainer'
@@ -174,6 +176,9 @@ export default class Sidebar extends React.PureComponent<Props, State> {
             >
                 <SidebarHeader/>
                 <div
+                    id='lhsNavigator'
+                    role='application'
+                    aria-label={ariaLabel}
                     className='a11y__region'
                     data-a11y-sort-order='6'
                 >
@@ -187,7 +192,9 @@ export default class Sidebar extends React.PureComponent<Props, State> {
                         unreadFilterEnabled={this.props.unreadFilterEnabled}
                     />
                 </div>
-                <Pluggable pluggableName='LeftSidebarHeader'/>
+                <div className='sidebar--left__icons'>
+                    <Pluggable pluggableName='LeftSidebarHeader'/>
+                </div>
                 <SidebarChannelList
                     handleOpenMoreDirectChannelsModal={this.handleOpenMoreDirectChannelsModal}
                     onDragStart={this.onDragStart}

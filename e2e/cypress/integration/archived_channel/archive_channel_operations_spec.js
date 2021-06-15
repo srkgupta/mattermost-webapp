@@ -7,21 +7,20 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
 // Group: @channel
 
-import {getAdminAccount} from '../../support/env';
 import {getRandomId} from '../../utils';
+
+import {createArchivedChannel} from './helpers';
 
 describe('Leave an archived channel', () => {
     let testTeam;
     let testChannel;
     let testUser;
-    let adminUser;
     const testArchivedMessage = `this is an archived post ${getRandomId()}`;
 
     before(() => {
-        adminUser = getAdminAccount();
-
         cy.apiUpdateConfig({
             TeamSettings: {
                 ExperimentalViewArchivedChannels: true,
@@ -73,9 +72,10 @@ describe('Leave an archived channel', () => {
             });
         });
     });
+
     it('MM-T1705 User can unarchive a public channel', () => {
         // # As a user with appropriate permission, archive a public channel:
-        cy.apiLogin(adminUser);
+        cy.apiAdminLogin();
 
         cy.visit(`/${testTeam.name}/channels/off-topic`);
         cy.contains('#channelHeaderTitle', 'Off-Topic');
@@ -84,7 +84,7 @@ describe('Leave an archived channel', () => {
 
         createArchivedChannel({prefix: 'unarchive-'}, [messageText]).then(({name}) => {
             // # View the archived channel, noting that it is read-only
-            cy.get('#post_textbox').should('not.be.visible');
+            cy.get('#post_textbox').should('not.exist');
 
             // # Unarchive the channel:
             cy.uiUnarchiveChannel();
@@ -93,15 +93,15 @@ describe('Leave an archived channel', () => {
             cy.get('#post_textbox').should('be.visible');
 
             // * Channel is displayed in LHS with the normal icon, not an archived channel icon
-            cy.get(`#sidebarItem_${name}`).should('be.visible');
+            cy.get(`#sidebarItem_${name}`).scrollIntoView().should('be.visible');
 
-            cy.get(`#sidebarItem_${name} span`).should('have.class', 'icon__globe');
+            cy.get(`#sidebarItem_${name}`).find('.icon-globe').should('be.visible');
         });
     });
 
     it('MM-T1706 User can unarchive a private channel', () => {
         // # As a user with appropriate permission, archive a private channel:
-        cy.apiLogin(adminUser);
+        cy.apiAdminLogin();
 
         cy.visit(`/${testTeam.name}/channels/off-topic`);
         cy.contains('#channelHeaderTitle', 'Off-Topic');
@@ -114,7 +114,7 @@ describe('Leave an archived channel', () => {
 
         createArchivedChannel(channelOptions, [messageText]).then(({name}) => {
             // # View the archived channel, noting that it is read-only
-            cy.get('#post_textbox').should('not.be.visible');
+            cy.get('#post_textbox').should('not.exist');
 
             // # Unarchive the channel:
             cy.uiUnarchiveChannel().then(() => {
@@ -122,32 +122,8 @@ describe('Leave an archived channel', () => {
                 cy.get('#post_textbox').should('be.visible');
 
                 // * Channel is displayed in LHS with the normal icon, not an archived channel icon
-                cy.get(`#sidebarItem_${name}`).should('be.visible');
-                cy.get(`#sidebarItem_${name} span`).should('have.class', 'icon__lock');
+                cy.get(`#sidebarItem_${name}`).find('.icon-lock-outline').should('be.visible');
             });
         });
     });
 });
-
-function createArchivedChannel(channelOptions, messages, memberUsernames) {
-    let channelName;
-    return cy.uiCreateChannel(channelOptions).then((newChannel) => {
-        channelName = newChannel.name;
-        if (memberUsernames) {
-            cy.uiAddUsersToCurrentChannel(memberUsernames);
-        }
-        if (messages) {
-            let messageList = messages;
-            if (!Array.isArray(messages)) {
-                messageList = [messages];
-            }
-            messageList.forEach((message) => {
-                cy.postMessage(message);
-            });
-        }
-        cy.uiArchiveChannel();
-        cy.get('#channelArchivedMessage').should('be.visible');
-
-        return cy.wrap({name: channelName});
-    });
-}

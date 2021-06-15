@@ -1,4 +1,3 @@
-
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
@@ -8,11 +7,11 @@
 // - Use element ID when selecting an element. Create one if none.
 // ***************************************************************
 
+// Stage: @prod
 // Group: @notifications
 
 import * as MESSAGES from '../../fixtures/messages';
 import * as TIMEOUTS from '../../fixtures/timeouts';
-import {getEmailUrl} from '../../utils';
 import {spyNotificationAs} from '../../support/notification';
 
 describe('Desktop notifications', () => {
@@ -29,32 +28,6 @@ describe('Desktop notifications', () => {
 
     beforeEach(() => {
         cy.apiAdminLogin();
-    });
-
-    it('Check Desktop Notification mocking works', () => {
-        cy.apiCreateUser({}).then(({user}) => {
-            cy.apiAddUserToTeam(testTeam.id, user.id);
-            cy.apiLogin(user);
-
-            cy.apiCreateDirectChannel([testUser.id, user.id]).then(({channel}) => {
-                // Ensure notifications are set up to fire a desktop notification if you receive a DM
-                cy.apiPatchUser(user.id, {notify_props: {...user.notify_props, desktop: 'all'}});
-
-                // Visit the MM webapp with the notification API stubbed.
-                cy.visit(`/${testTeam.name}/channels/town-square`);
-                spyNotificationAs('withNotification', 'granted');
-
-                // Make sure user is marked as online.
-                cy.get('#post_textbox').clear().type('/online{enter}');
-
-                // Have another user send you a DM to trigger a Desktop Notification.
-                cy.postMessageAs({sender: testUser, message: MESSAGES.TINY, channelId: channel.id});
-
-                // Desktop notification should be received.
-                cy.wait(TIMEOUTS.HALF_SEC);
-                cy.get('@withNotification').should('have.been.calledOnce');
-            });
-        });
     });
 
     it('MM-T482 Desktop Notifications - (at) here not rec\'d when logged off', () => {
@@ -83,7 +56,6 @@ describe('Desktop notifications', () => {
                 cy.visit(`/${testTeam.name}/channels/town-square`);
 
                 // * Desktop notification is not received.
-                cy.wait(TIMEOUTS.HALF_SEC);
                 cy.get('@withoutNotification').should('not.have.been.called');
 
                 // * Should not have unread mentions indicator.
@@ -108,20 +80,8 @@ describe('Desktop notifications', () => {
                     should('exist');
             });
 
-            const baseUrl = Cypress.config('baseUrl');
-            const mailUrl = getEmailUrl(baseUrl);
-
             // * Verify no email notification received for the mention.
-            cy.task('getRecentEmail', {username: user.username, mailUrl}).then((response) => {
-                const {data, status} = response;
-
-                // # Should return success status.
-                expect(status).to.equal(200);
-
-                // # Verify that only joining to mattermost e-mail exist.
-                expect(data.to.length).to.equal(1);
-                expect(data.to[0]).to.contain(user.email);
-
+            cy.getRecentEmail(user).then((data) => {
                 // # Verify that the email subject is about joining.
                 expect(data.subject).to.contain('You joined');
             });
@@ -246,7 +206,6 @@ describe('Desktop notifications', () => {
 
                 // # Visit Town square
                 cy.visit(`/${testTeam.name}/channels/town-square`);
-                cy.wait(TIMEOUTS.HALF_SEC);
 
                 spyNotificationAs('withNotification', 'granted');
 
@@ -266,7 +225,7 @@ describe('Desktop notifications', () => {
                 });
 
                 // * Notification badge is aligned 10px to the right of LHS
-                cy.get(`#sidebarItem_${channel.name} .badge`).should('exist').and('have.css', 'margin', '0px 10px 0px 0px');
+                cy.get(`#sidebarItem_${channel.name} .badge`).should('exist').and('have.css', 'margin', '0px 6px');
             });
         });
     });
@@ -534,7 +493,7 @@ describe('Desktop notifications', () => {
                 cy.get('#soundOff').check();
 
                 // # Ensure sound dropdown is not visible
-                cy.get('#displaySoundNotification').should('not.be.visible');
+                cy.get('#displaySoundNotification').should('not.exist');
 
                 // # Click "Save"
                 cy.findByText('Save').scrollIntoView().should('be.visible').click();
